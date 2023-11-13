@@ -25,17 +25,13 @@
             <version>${dl4j.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-cuda-9.2-platform</artifactId>
-            <version>${cuda.version}</version>
-        </dependency>
-
+<!--
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-cuda-9.2</artifactId>
             <version>${cuda.version}</version>
         </dependency>
+        -->
 
         <dependency>
             <groupId>org.deeplearning4j</groupId>
@@ -96,6 +92,17 @@
             <artifactId>annotations</artifactId>
             <version>RELEASE</version>
             <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.6.4</version>
         </dependency>
 
     </dependencies>

@@ -1,6 +1,7 @@
 package org.diplom.cifar;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -8,11 +9,14 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerType;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 @Slf4j
 public class CifarImagePreProcessor implements DataNormalization {
 
-    public static final INDArray VGG_MEAN_OFFSET_BGR = Nd4j.create(new double[]{255, 255, 255});
+    private static final Nd4jBackend b = Nd4j.getBackend();
+
+    public static final INDArray VGG_MEAN_OFFSET_BGR = Nd4j.create(new float[]{255, 255, 255});
 
     /**
      * Iterates over a dataset
@@ -33,7 +37,9 @@ public class CifarImagePreProcessor implements DataNormalization {
     }
 
     public void preProcess(INDArray features) {
-        Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(features.dup(), VGG_MEAN_OFFSET_BGR, features, 1));
+        Nd4j.getExecutioner().execAndReturn(
+                new BroadcastAddOp(features.dup(), VGG_MEAN_OFFSET_BGR, features, 1)
+        );
     }
 
     @Override
@@ -58,12 +64,12 @@ public class CifarImagePreProcessor implements DataNormalization {
 
     @Override
     public void revertFeatures(INDArray indArray) {
-      Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(indArray.dup(), VGG_MEAN_OFFSET_BGR, indArray, 1));
+        Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(indArray.dup(), VGG_MEAN_OFFSET_BGR, indArray, 1));
     }
 
     @Override
     public void revertFeatures(INDArray indArray, INDArray indArray1) {
-      revertFeatures(indArray);
+        revertFeatures(indArray);
     }
 
     @Override
@@ -73,7 +79,7 @@ public class CifarImagePreProcessor implements DataNormalization {
 
     @Override
     public void revertLabels(INDArray indArray, INDArray indArray1) {
-       revertLabels(indArray);
+        revertLabels(indArray);
     }
 
     @Override
