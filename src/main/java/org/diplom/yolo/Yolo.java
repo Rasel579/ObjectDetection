@@ -1,6 +1,7 @@
 package org.diplom.yolo;
 
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacv.Frame;
 import org.bytedeco.opencv.opencv_core.Mat;
 import org.bytedeco.opencv.opencv_core.Point;
 import org.bytedeco.opencv.opencv_core.Scalar;
@@ -9,22 +10,21 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
 import org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.layers.objdetect.YoloUtils;
-import org.deeplearning4j.zoo.model.YOLO2;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.zoo.model.TinyYOLO;
 import org.diplom.ImageUtils;
 import org.diplom.cifar.TrainCifar10Model;
 import org.jetbrains.annotations.Nullable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
-
 import org.threadly.concurrent.collections.ConcurrentArrayList;
 
 import javax.imageio.ImageIO;
-import java.awt.Frame;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -35,19 +35,11 @@ import static org.bytedeco.opencv.global.opencv_imgproc.*;
 @Slf4j
 public class Yolo {
     private static final double YOLO_DETECTION_THRESHOLD = 0.7;
-    public final String[] COCO_CLASSES = {"person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train",
-            "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
-            "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag",
-            "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove",
-            "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl",
-            "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair",
-            "sofa", "pottedplant", "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard",
-            "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors",
-            "teddy bear", "hair drier", "toothbrush"};
+    public final String[] COCO_CLASSES = {"person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "sofa", "pottedplant", "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"};
 
     private final Map<String, Stack<Mat>> stackMap = new ConcurrentHashMap<>();
     private TrainCifar10Model trainCifar10Model = new TrainCifar10Model();
-    private Speed selectedSpeed = Speed.MEDIUM;
+    private Speed selectedSpeed = Speed.SLOW;
     private boolean outputFrames;
     private double trackingThreshold;
     private String pretrainedCifarModel;
@@ -60,18 +52,16 @@ public class Yolo {
     private Map<String, ComputationGraph> modelsMap = new ConcurrentHashMap<>();
     private NativeImageLoader loader;
 
-    public void initialize(String windowName,
-                           boolean outputFrames,
-                           double threshold,
-                           String model,
-                           Strategy strategy) throws IOException {
+    public void initialize(String windowName, boolean outputFrames, double threshold, String model, Strategy strategy) throws IOException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
         this.trackingThreshold = threshold;
         this.outputFrames = outputFrames;
         this.pretrainedCifarModel = model;
         this.strategy = strategy;
         stackMap.put(windowName, new Stack<>());
 
-        ComputationGraph yolo = (ComputationGraph) YOLO2.builder().build().initPretrained();
+        ComputationGraph yolo;
+        yolo = YOLOPretrained.initPretrained();
+
         prepareYOLOLabels();
 
         trainCifar10Model.loadTrainedModel(pretrainedCifarModel);
@@ -82,8 +72,9 @@ public class Yolo {
 
     private void warmUp(ComputationGraph model) throws IOException {
         Yolo2OutputLayer outputLayer = (Yolo2OutputLayer) model.getOutputLayer(0);
-        BufferedImage read = ImageIO.read(new File("/src/main/resources/sample.jpeg"));
-        INDArray indArray = prepareImage(loader.asMatrix(read));
+        BufferedImage read = ImageIO.read(new File("./src/main/resources/sample.jpg"));
+        INDArray indArray = loader.asMatrix(read);
+        indArray = prepareImage(indArray);
         INDArray results = model.outputSingle(indArray);
         outputLayer.getPredictedObjects(results, YOLO_DETECTION_THRESHOLD);
     }
@@ -149,8 +140,7 @@ public class Yolo {
         for (MarkedObject predictedObject : previousPredictedObjects) {
             double distance = predictedObject.getL2Norm().distance2(markedObject.getL2Norm());
             if (strategy == Strategy.IoU_PLUS_ENCODINGS) {
-                if (YoloUtils.iou(markedObject.getDetectedObject(), predictedObject.getDetectedObject()) >= 0.5
-                        && distance <= trackingThreshold) {
+                if (YoloUtils.iou(markedObject.getDetectedObject(), predictedObject.getDetectedObject()) >= 0.5 && distance <= trackingThreshold) {
                     minDistanceMarkedObject = predictedObject;
                     markedObject.setId(minDistanceMarkedObject.getId());
                     break;
@@ -207,10 +197,11 @@ public class Yolo {
     private void prepareLabels(String[] coco_classes) {
         if (map == null) {
             groupMap = new HashMap<>();
-            groupMap.put("car", "C");
-            groupMap.put("bus", "C");
-            groupMap.put("truck", "C");
+            groupMap.put("car", "car");
+            groupMap.put("bus", "bus");
+            groupMap.put("truck", "truck");
             int i = 0;
+            map = new HashMap<>();
             for (String s1 : coco_classes) {
                 map.put(i++, s1);
             }
@@ -239,16 +230,14 @@ public class Yolo {
         }
         List<DetectedObject> predictedObjects = outputLayer.getPredictedObjects(results, YOLO_DETECTION_THRESHOLD);
         YoloUtils.nms(predictedObjects, 0.5);
-        List<MarkedObject> markedObjects = predictedObjects.stream().filter(e -> groupMap.get(map.get(e.getPredictedClass())) != null)
-                .map(e -> {
-                            try {
-                                return new MarkedObject(e, trainCifar10Model.getEmbeddings(matFrame, e, selectedSpeed), System.currentTimeMillis(), matFrame);
-                            } catch (Exception e1) {
-                                e1.printStackTrace();
-                            }
-                            return null;
-                        }
-                ).collect(Collectors.toCollection(ConcurrentArrayList::new));
+        List<MarkedObject> markedObjects = predictedObjects.stream().filter(e -> groupMap.get(map.get(e.getPredictedClass())) != null).map(e -> {
+            try {
+                return new MarkedObject(e, trainCifar10Model.getEmbeddings(matFrame, e, selectedSpeed), System.currentTimeMillis(), matFrame);
+            } catch (Exception e1) {
+                e1.printStackTrace();
+            }
+            return null;
+        }).collect(Collectors.toCollection(ConcurrentArrayList::new));
 
         if (outputFrames) {
             for (MarkedObject markedObject : markedObjects) {

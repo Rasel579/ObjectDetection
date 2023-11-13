@@ -12,10 +12,12 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
 import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.zoo.PretrainedType;
@@ -25,6 +27,7 @@ import org.diplom.ImageUtils;
 import org.diplom.yolo.Speed;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -47,7 +50,7 @@ public class TrainCifar10Model implements Serializable {
     private static final DataNormalization IMAGE_PRE_PROCESSOR = new CifarImagePreProcessor();
     private static final NativeImageLoader LOADER = new NativeImageLoader(ImageUtils.HEIGHT, ImageUtils.WIDTH, 3);
     private static final String CONTENT_LAYER_NAME = "embeddings";
-    private static final String MODEL_SAVE_PATH = "/src/main/resources/models/";
+    private static final String MODEL_SAVE_PATH = "./src/main/resources/models/";
     private static final int SAVE_INTERVAL = 50;
     private static final int TEST_INTERVAL = 5;
     private static final int EPOCH_INTERVAL = 2400;
@@ -56,7 +59,7 @@ public class TrainCifar10Model implements Serializable {
     public static final double LAMBDA = 5e-4;
     private static final String PREFIX = "EXP";
     private ComputationGraph cifar10Transfer;
-
+    private static final String FREEZE_UNTIL_LAYER = "fc2";
     public static void main(String[] args) throws IOException {
         TrainCifar10Model trainCifar10Model = new TrainCifar10Model();
         trainCifar10Model.train();
@@ -68,7 +71,7 @@ public class TrainCifar10Model implements Serializable {
 
     private void train() throws IOException {
         ZooModel zooModel = VGG16.builder().build();
-        ComputationGraph vgg16 = (ComputationGraph) zooModel.initPretrained(PretrainedType.CIFAR10);
+        ComputationGraph vgg16 = (ComputationGraph) zooModel.initPretrained();
         log.info(vgg16.summary());
 
         IUpdater iUpdaterWithDefaultConfig = Updater.ADAM.getIUpdaterWithDefaultConfig();
@@ -103,14 +106,14 @@ public class TrainCifar10Model implements Serializable {
                         .build(), "block3_pool")
                 .addVertex("embeddings", new L2NormalizeVertex(new int[]{}, 1e-12), "dense_1")
                 .addLayer("lossLayer", new CenterLossOutputLayer.Builder()
+
                         .lossFunction(LossFunctions.LossFunction.SQUARED_LOSS)
                         .activation(Activation.SOFTMAX)
                         .lambda(LAMBDA)
                         .alpha(0.9)
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
                         .build())
-
-                .setOutputs("lossLayer")
+                .setOutputs("output")
                 .build();
         log.info(cifar10Model.summary());
 
