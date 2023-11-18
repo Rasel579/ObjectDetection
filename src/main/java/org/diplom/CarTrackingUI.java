@@ -2,27 +2,9 @@ package org.diplom;
 
 import org.diplom.yolo.Strategy;
 
-import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JSpinner;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
-import javax.swing.WindowConstants;
+import javax.swing.*;
 import javax.swing.plaf.FontUIResource;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
+import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
@@ -35,7 +17,7 @@ public class CarTrackingUI {
     public static final AtomicInteger atomicInteger = new AtomicInteger();
     private static final int FRAME_WIDTH = 550;
     private static final int FRAME_HEIGHT = 220;
-    private static final Font  FONT = new Font("Dialog", Font.BOLD, 18);
+    private static final Font FONT = new Font("Dialog", Font.BOLD, 18);
     private static final Font ITALIC = new Font("Dialog", Font.ITALIC, 18);
     private static final String AUTONOMOUS_DRIVING = "Car Tracking";
     private JFrame mainFrame;
@@ -58,7 +40,7 @@ public class CarTrackingUI {
         JButton chooseVideo = new JButton("Choose Video");
         chooseVideo.setBackground(Color.ORANGE.darker());
         chooseVideo.setForeground(Color.ORANGE.darker());
-        chooseVideo.addActionListener( e -> chooseFileAction());
+        chooseVideo.addActionListener(e -> chooseFileAction());
 
         actionPanel.add(chooseVideo);
 
@@ -83,14 +65,14 @@ public class CarTrackingUI {
                                     (Strategy) strategy.getSelectedItem()
                             );
 
-                        } catch (Exception e2){
+                        } catch (Exception e2) {
                             e2.printStackTrace();
                         }
                     };
 
                     new Thread(runnable).start();
 
-                }catch (Exception e1){
+                } catch (Exception e1) {
                     throw new RuntimeException(e1);
                 } finally {
                     progressBar.setVisible(false);
@@ -103,24 +85,56 @@ public class CarTrackingUI {
         JButton stop = new JButton("Stop");
         stop.setForeground(Color.BLUE.darker());
         stop.setBackground(Color.BLUE.darker());
-        stop.addActionListener( e -> {
-            if (videoPlayer == null ){
+        stop.addActionListener(e -> {
+            if (videoPlayer == null) {
                 return;
             }
             try {
                 videoPlayer.stop();
 
-            }catch (Exception e1){
+            } catch (Exception e1) {
                 e1.printStackTrace();
             }
             progressBar.setVisible(false);
         });
         actionPanel.add(stop);
+
+        JButton cameraBtn = new JButton("Camera");
+        actionPanel.add(cameraBtn);
+        cameraBtn.addActionListener(e -> {
+            progressBar = new ProgressBar(mainFrame);
+            SwingUtilities.invokeLater(() -> progressBar.showProgressBar("Detecting camera ..."));
+            Executors.newSingleThreadExecutor().submit(() -> {
+                try {
+                    WebCameraPlayer cameraPlayer = new WebCameraPlayer();
+                    Runnable runnable = () -> {
+                        try {
+                            cameraPlayer.runCamera(
+                                    String.valueOf(atomicInteger.incrementAndGet()),
+                                    false,
+                                    (Double) threshold.getValue(),
+                                    (String) chooserCifarModel.getSelectedItem(),
+                                    (Strategy) strategy.getSelectedItem()
+                            );
+                        } catch (Exception e2) {
+                            e2.printStackTrace();
+                        }
+                    };
+
+                    new Thread(runnable).start();
+
+                } catch (Exception e1) {
+                    throw new RuntimeException(e1);
+                } finally {
+                    progressBar.setVisible(false);
+                }
+            });
+        });
         mainPanel.add(actionPanel);
 
         chooserCifarModel = new JComboBox<>();
         chooserCifarModel.setForeground(Color.BLUE.darker());
-        Stream.of(Objects.requireNonNull(new File("./src/main/resources/models").listFiles())).forEach(f1 -> chooserCifarModel.addItem(f1.getName()) );
+        Stream.of(Objects.requireNonNull(new File("./src/main/resources/models").listFiles())).forEach(f1 -> chooserCifarModel.addItem(f1.getName()));
         JLabel label = new JLabel("Cifar-10-model");
 
         label.setForeground(Color.BLUE);
@@ -148,7 +162,7 @@ public class CarTrackingUI {
         JFileChooser chooser = new JFileChooser();
         chooser.setCurrentDirectory(new File(new File("./src/main/resources").getAbsolutePath()));
         int action = chooser.showOpenDialog(null);
-        if (action == JFileChooser.APPROVE_OPTION){
+        if (action == JFileChooser.APPROVE_OPTION) {
             selectedFile = chooser.getSelectedFile();
         }
     }

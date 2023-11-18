@@ -63,7 +63,7 @@ public class VideoPlayer {
             Mat resizeMat = new Mat(yolo.getSelectedSpeed().height, yolo.getSelectedSpeed().width, mat.type());
             yolo.push(resizeMat, windowName);
             resize(mat, resizeMat, resizeMat.size());
-            yolo.drawBoundingBoxesRectangle(frame, resizeMat, windowName);
+            yolo.drawBoundingBoxesRectangle(frame, resizeMat, windowName, null, null);
             char key = (char) waitKey(20);
 
             if (key == 27) {
