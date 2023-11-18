@@ -18,8 +18,8 @@ import java.util.stream.Stream;
 
 @Slf4j
 public class TestModels {
-    private static final String BASE = "ObjectDetection/src/main/resources/models/";
-    private static final String TEST_DATA = "ObjectDetection/test_data";
+    private static final String BASE = "./src/main/resources/models/";
+    private static final String TEST_DATA = "./test_data";
     private static final double THRESHOLD = 0.85;
     private static final CifarImagePreProcessor IMAGE_PRE_PROCESSOR = new CifarImagePreProcessor();
     private static final NativeImageLoader LOADER = new NativeImageLoader(ImageUtils.HEIGHT, ImageUtils.WIDTH );
