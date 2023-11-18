@@ -1,7 +1,9 @@
 package org.diplom.yolo;
 
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.bytedeco.opencv.opencv_core.Mat;
 import org.bytedeco.opencv.opencv_core.Point;
 import org.bytedeco.opencv.opencv_core.Scalar;
@@ -12,7 +14,6 @@ import org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.layers.objdetect.YoloUtils;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.deeplearning4j.zoo.model.TinyYOLO;
 import org.diplom.ImageUtils;
 import org.diplom.cifar.TrainCifar10Model;
 import org.jetbrains.annotations.Nullable;
@@ -83,7 +84,7 @@ public class Yolo {
         stackMap.get(windowName).push(frame);
     }
 
-    public void drawBoundingBoxesRectangle(Frame frame, Mat matFrame, String windowName) {
+    public void drawBoundingBoxesRectangle(Frame frame, Mat matFrame, String windowName, CanvasFrame canvas, OpenCVFrameConverter.ToMat toMatConverter) {
         if (invalidData(frame, matFrame) || outputFrames) {
             return;
         }
@@ -97,16 +98,28 @@ public class Yolo {
         for (MarkedObject markedObject : detectedObjects) {
             try {
                 createBoundingBoxRectangle(matFrame, markedObject);
-                imshow(windowName, matFrame);
+                if (toMatConverter != null && canvas != null) {
+                    canvas.showImage(toMatConverter.convert(matFrame));
+                } else {
+                    imshow(windowName, matFrame);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
                 log.error("Problem with out of the bounds image");
-                imshow(windowName, matFrame);
+                if (toMatConverter != null && canvas != null) {
+                    canvas.showImage(toMatConverter.convert(matFrame));
+                } else {
+                    imshow(windowName, matFrame);
+                }
             }
         }
         previousPredictedObjects.addAll(detectedObjects);
         if (detectedObjects.isEmpty()) {
-            imshow(windowName, matFrame);
+            if (toMatConverter != null && canvas != null) {
+                canvas.showImage(toMatConverter.convert(matFrame));
+            } else {
+                imshow(windowName, matFrame);
+            }
         }
 
     }
@@ -200,6 +213,7 @@ public class Yolo {
             groupMap.put("car", "car");
             groupMap.put("bus", "bus");
             groupMap.put("truck", "truck");
+            groupMap.put("person", "person");
             int i = 0;
             map = new HashMap<>();
             for (String s1 : coco_classes) {

@@ -1,7 +1,6 @@
 package org.diplom.cifar;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.dataset.api.DataSet;
