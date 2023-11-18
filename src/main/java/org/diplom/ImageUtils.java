@@ -59,7 +59,7 @@ public class ImageUtils {
         BufferedImage subImage = image.getSubimage((int)tx, (int)ty, (int)(width*wPixelPerGrid), (int)(height*hPixelPerGrid));
 
         if (writeCropImageIntoDisk){
-            ImageIO.write(subImage, "jpg",  new File("ObjectDetection/src/main/resources/video_frames" + System.currentTimeMillis() + ".jpg"));
+            ImageIO.write(subImage, "jpg",  new File("./src/main/resources/video_frames" + System.currentTimeMillis() + ".jpg"));
         }
 
         return subImage;
