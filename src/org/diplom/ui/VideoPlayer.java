@@ -37,7 +37,7 @@ public class VideoPlayer {
             double threshold,
             String model,
             Strategy selectedItem
-    ) throws IOException, InterruptedException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
+    ) throws Exception {
         log.info("Start video detection " + videoFileName);
         log.info(windowName);
         yolo.initialize(windowName, outputFrames, threshold, model, selectedItem);

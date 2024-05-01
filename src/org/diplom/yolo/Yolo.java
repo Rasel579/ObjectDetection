@@ -14,6 +14,7 @@ import org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.layers.objdetect.YoloUtils;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.diplom.facenet.FaceRecognition;
 import org.diplom.utils.ImageUtils;
 import org.diplom.cifar.TrainCifar10Model;
 import org.jetbrains.annotations.Nullable;
@@ -36,7 +37,7 @@ import static org.bytedeco.opencv.global.opencv_imgproc.*;
 @Slf4j
 public class Yolo {
     private static final double YOLO_DETECTION_THRESHOLD = 0.7;
-    public final String[] COCO_CLASSES = {"person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "sofa", "pottedplant", "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"};
+    public final String[] COCO_CLASSES = { "person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "sofa", "pottedplant", "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"};
 
     private final Map<String, Stack<Mat>> stackMap = new ConcurrentHashMap<>();
     private TrainCifar10Model trainCifar10Model = new TrainCifar10Model();
@@ -52,8 +53,21 @@ public class Yolo {
     private HashMap<String, String> groupMap;
     private Map<String, ComputationGraph> modelsMap = new ConcurrentHashMap<>();
     private NativeImageLoader loader;
+    private FaceRecognition faceRecognition;
 
-    public void initialize(String windowName, boolean outputFrames, double threshold, String model, Strategy strategy) throws IOException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
+    private static final String BASE = "./src/main/resources";
+
+    public void initialize(String windowName, boolean outputFrames, double threshold, String model, Strategy strategy) throws Exception {
+
+        faceRecognition = new FaceRecognition();
+        faceRecognition.loadModel();
+
+        File[] files = new File(BASE + "/images").listFiles();
+        for (File file : Objects.requireNonNull(files)) {
+            File[] images = file.listFiles();
+            addPhoto(Objects.requireNonNull(images)[0].getAbsolutePath(), file.getName());
+        }
+
         this.trackingThreshold = threshold;
         this.outputFrames = outputFrames;
         this.pretrainedCifarModel = model;
@@ -147,7 +161,13 @@ public class Yolo {
         int y2 = (int) Math.round(h * xy2[1] / selectedSpeed.gridHeight);
 
         rectangle(file, new Point(x1, y1), new Point(x2, y2), org.bytedeco.opencv.opencv_core.Scalar.BLUE);
-        putText(file, groupMap.get(map.get(predictedClass)) + "-" + id + " ebat obnaruzhil", new Point(x1 + 2, y1 - 2), FONT_HERSHEY_DUPLEX, 2, Scalar.GREEN);
+        String name = "не заню";
+        try {
+            name = faceRecognition.whoIs( file );
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        putText(file, groupMap.get(map.get(predictedClass)) + "-" + name, new Point(x1 + 2, y1 - 2), FONT_HERSHEY_DUPLEX, 1, Scalar.GREEN);
     }
 
     @Nullable
@@ -266,6 +286,10 @@ public class Yolo {
         this.predictedObjects = markedObjects;
         log.info("stack of predictions size " + this.predictedObjects.size());
         log.info("Prediction time " + (System.currentTimeMillis() - start) / 1000d);
+    }
+
+    private void addPhoto(String path, String name) throws IOException {
+        faceRecognition.registerNewMember( name , path);
     }
 
 }
