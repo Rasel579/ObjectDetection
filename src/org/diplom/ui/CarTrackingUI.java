@@ -1,4 +1,4 @@
-package org.diplom;
+package org.diplom.ui;
 
 import org.diplom.yolo.Strategy;
 
@@ -194,7 +194,7 @@ public class CarTrackingUI {
     }
 
     private void addSignature() {
-        JLabel signature = new JLabel("Ruslan_Shaykh", SwingConstants.CENTER);
+        JLabel signature = new JLabel("Р.М.Шайхислмамов, студент гр. НТм(до)-22", SwingConstants.CENTER);
         signature.setFont(new Font(Font.SANS_SERIF, Font.ITALIC, 20));
         signature.setForeground(Color.BLUE);
         mainFrame.add(signature, BorderLayout.SOUTH);

@@ -14,7 +14,7 @@ import org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.layers.objdetect.YoloUtils;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.diplom.ImageUtils;
+import org.diplom.utils.ImageUtils;
 import org.diplom.cifar.TrainCifar10Model;
 import org.jetbrains.annotations.Nullable;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -40,7 +40,7 @@ public class Yolo {
 
     private final Map<String, Stack<Mat>> stackMap = new ConcurrentHashMap<>();
     private TrainCifar10Model trainCifar10Model = new TrainCifar10Model();
-    private Speed selectedSpeed = Speed.SLOW;
+    private Speed selectedSpeed = Speed.MEDIUM;
     private boolean outputFrames;
     private double trackingThreshold;
     private String pretrainedCifarModel;
@@ -62,7 +62,10 @@ public class Yolo {
 
         ComputationGraph yolo;
         yolo = YOLOPretrained.initPretrained();
-
+      //  UIServer uiServer = UIServer.getInstance();
+      //  StatsStorage statsStorage = new InMemoryStatsStorage();
+      //  uiServer.attach(statsStorage);
+      //  yolo.setListeners(new StatsListener(statsStorage));
         prepareYOLOLabels();
 
         trainCifar10Model.loadTrainedModel(pretrainedCifarModel);
@@ -144,11 +147,11 @@ public class Yolo {
         int y2 = (int) Math.round(h * xy2[1] / selectedSpeed.gridHeight);
 
         rectangle(file, new Point(x1, y1), new Point(x2, y2), org.bytedeco.opencv.opencv_core.Scalar.BLUE);
-        putText(file, groupMap.get(map.get(predictedClass)) + "-" + id, new Point(x1 + 2, y1 - 2), FONT_HERSHEY_DUPLEX, 2, Scalar.GREEN);
+        putText(file, groupMap.get(map.get(predictedClass)) + "-" + id + " ebat obnaruzhil", new Point(x1 + 2, y1 - 2), FONT_HERSHEY_DUPLEX, 2, Scalar.GREEN);
     }
 
     @Nullable
-    private MarkedObject findExistanceCarMatch(MarkedObject markedObject) {
+    private MarkedObject findExistanceCarMatch(org.diplom.yolo.MarkedObject markedObject) {
         MarkedObject minDistanceMarkedObject = null;
         for (MarkedObject predictedObject : previousPredictedObjects) {
             double distance = predictedObject.getL2Norm().distance2(markedObject.getL2Norm());
@@ -214,6 +217,8 @@ public class Yolo {
             groupMap.put("bus", "bus");
             groupMap.put("truck", "truck");
             groupMap.put("person", "person");
+            groupMap.put("cat", "cat");
+            groupMap.put("dog", "dog");
             int i = 0;
             map = new HashMap<>();
             for (String s1 : coco_classes) {
