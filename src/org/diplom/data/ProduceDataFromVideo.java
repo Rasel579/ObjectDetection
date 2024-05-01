@@ -7,7 +7,7 @@ import org.diplom.ui.VideoPlayer;
 import java.io.IOException;
 
 public class ProduceDataFromVideo {
-    public static void main(String[] args) throws IOException, InterruptedException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
+    public static void main(String[] args) throws Exception {
         VideoPlayer videoPlayer = new VideoPlayer();
         videoPlayer.startRealTimeVideoDetection(
                 "./src/main/resources/videoSample.mp4",
