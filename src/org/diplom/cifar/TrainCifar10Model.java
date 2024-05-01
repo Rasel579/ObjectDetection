@@ -12,22 +12,18 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
 import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
-import org.deeplearning4j.zoo.PretrainedType;
 import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.zoo.model.VGG16;
-import org.diplom.ImageUtils;
+import org.diplom.utils.ImageUtils;
 import org.diplom.yolo.Speed;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -60,6 +56,7 @@ public class TrainCifar10Model implements Serializable {
     private static final String PREFIX = "EXP";
     private ComputationGraph cifar10Transfer;
     private static final String FREEZE_UNTIL_LAYER = "fc2";
+
     public static void main(String[] args) throws IOException {
         TrainCifar10Model trainCifar10Model = new TrainCifar10Model();
         trainCifar10Model.train();
@@ -99,25 +96,29 @@ public class TrainCifar10Model implements Serializable {
                 .removeVertexAndConnections("dropout_1")
                 .removeVertexAndConnections("embeddings")
                 .removeVertexAndConnections("flatten_1")
+                .removeVertexAndConnections("fc1")
+                .removeVertexAndConnections("fc2")
+                .removeVertexAndConnections("predictions")
+                .removeVertexAndConnections("flatten")
                 .addLayer("dense_1", new DenseLayer.Builder()
-                        .nIn(4096)
+                        .nIn(1000)
                         .nOut(EMBEDDINGS)
                         .activation(Activation.RELU)
-                        .build(), "block3_pool")
+                        .build(), "block5_pool")
                 .addVertex("embeddings", new L2NormalizeVertex(new int[]{}, 1e-12), "dense_1")
-                .addLayer("lossLayer", new CenterLossOutputLayer.Builder()
-
+                .addLayer("lossLayers", new CenterLossOutputLayer.Builder()
                         .lossFunction(LossFunctions.LossFunction.SQUARED_LOSS)
+                        .nOut(EMBEDDINGS)
                         .activation(Activation.SOFTMAX)
                         .lambda(LAMBDA)
                         .alpha(0.9)
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
-                        .build())
-                .setOutputs("output")
+                        .build(), "embeddings")
+                .setOutputs("lossLayers")
                 .build();
         log.info(cifar10Model.summary());
 
-        File rootDir = new File("/train_from_video_" + NUM_POSSIBLE_LABELS);
+        File rootDir = new File("./train_from_video_" + NUM_POSSIBLE_LABELS);
 
         DataSetIterator dataSetIterator = ImageUtils.createDataSetIterator(rootDir, NUM_POSSIBLE_LABELS, BATCH_SIZE);
         DataSetIterator testSetIterator = ImageUtils.createDataSetIterator(rootDir, NUM_POSSIBLE_LABELS, BATCH_SIZE);

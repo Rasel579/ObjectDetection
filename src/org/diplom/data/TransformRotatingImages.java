@@ -7,7 +7,7 @@ import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
 import org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.layers.objdetect.YoloUtils;
 import org.deeplearning4j.zoo.model.YOLO2;
-import org.diplom.ImageUtils;
+import org.diplom.utils.ImageUtils;
 import org.diplom.yolo.Speed;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;

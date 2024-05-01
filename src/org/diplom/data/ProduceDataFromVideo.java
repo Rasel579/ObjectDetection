@@ -2,7 +2,7 @@ package org.diplom.data;
 
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.diplom.VideoPlayer;
+import org.diplom.ui.VideoPlayer;
 
 import java.io.IOException;
 
