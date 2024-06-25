@@ -118,7 +118,7 @@ public class TrainCifar10Model implements Serializable {
                 .build();
         log.info(cifar10Model.summary());
 
-        File rootDir = new File("./train_from_video_" + NUM_POSSIBLE_LABELS);
+        File rootDir = new File("./resources/train_from_video_" + NUM_POSSIBLE_LABELS);
 
         DataSetIterator dataSetIterator = ImageUtils.createDataSetIterator(rootDir, NUM_POSSIBLE_LABELS, BATCH_SIZE);
         DataSetIterator testSetIterator = ImageUtils.createDataSetIterator(rootDir, NUM_POSSIBLE_LABELS, BATCH_SIZE);
@@ -131,7 +131,6 @@ public class TrainCifar10Model implements Serializable {
                     trainMiniBatchData = dataSetIterator.next();
 
                 } catch (Exception e) {
-                    e.printStackTrace();
                 }
 
                 cifar10Model.fit(trainMiniBatchData);

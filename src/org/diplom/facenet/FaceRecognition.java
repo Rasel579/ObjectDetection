@@ -8,6 +8,8 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
+import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
@@ -17,7 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 @Slf4j
 public class FaceRecognition {
-    private static final double THRESHOLD = 0.000005;
+    private static final double THRESHOLD = 1.5;
     private FaceNetModel faceNetModel;
     private ComputationGraph computationGraph;
     private static final NativeImageLoader LOADER = new NativeImageLoader(96, 96, 3);
@@ -58,7 +60,7 @@ public class FaceRecognition {
 
     public void loadModel() throws Exception {
         faceNetModel = new FaceNetModel();
-        computationGraph = faceNetModel.init();
+        computationGraph = faceNetModel.initSavedModel();
         log.info(computationGraph.summary());
     }
 
@@ -68,7 +70,9 @@ public class FaceRecognition {
     }
 
     private static INDArray normalize(INDArray read) {
-        return read.div(255.0);
+        DataNormalization scaler = new ImagePreProcessingScaler(0,1);
+        scaler.transform(read);
+        return read;
     }
 
     public String whoIs(String imagePath) throws IOException {
