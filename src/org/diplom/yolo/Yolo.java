@@ -12,8 +12,6 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
 import org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.layers.objdetect.YoloUtils;
-import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
-import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.diplom.facenet.FaceRecognition;
 import org.diplom.utils.ImageUtils;
 import org.diplom.cifar.TrainCifar10Model;
@@ -36,22 +34,22 @@ import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
 @Slf4j
 public class Yolo {
-    private static final double YOLO_DETECTION_THRESHOLD = 0.7;
+    private static final double YOLO_DETECTION_THRESHOLD = 0.75;
     public final String[] COCO_CLASSES = { "person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "sofa", "pottedplant", "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"};
 
     private final Map<String, Stack<Mat>> stackMap = new ConcurrentHashMap<>();
-    private TrainCifar10Model trainCifar10Model = new TrainCifar10Model();
-    private Speed selectedSpeed = Speed.MEDIUM;
+    private final TrainCifar10Model trainCifar10Model = new TrainCifar10Model();
+    private final Speed selectedSpeed = Speed.MEDIUM;
     private boolean outputFrames;
     private double trackingThreshold;
     private String pretrainedCifarModel;
     private Strategy strategy;
     private volatile List<MarkedObject> predictedObjects = new ConcurrentArrayList<>();
-    private volatile Set<MarkedObject> previousPredictedObjects = new TreeSet<>();
+    private final Set<MarkedObject> previousPredictedObjects = new TreeSet<>();
 
     private HashMap<Integer, String> map;
     private HashMap<String, String> groupMap;
-    private Map<String, ComputationGraph> modelsMap = new ConcurrentHashMap<>();
+    private final Map<String, ComputationGraph> modelsMap = new ConcurrentHashMap<>();
     private NativeImageLoader loader;
     private FaceRecognition faceRecognition;
 
@@ -121,7 +119,6 @@ public class Yolo {
                     imshow(windowName, matFrame);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
                 log.error("Problem with out of the bounds image");
                 if (toMatConverter != null && canvas != null) {
                     canvas.showImage(toMatConverter.convert(matFrame));
@@ -161,7 +158,7 @@ public class Yolo {
         int y2 = (int) Math.round(h * xy2[1] / selectedSpeed.gridHeight);
 
         rectangle(file, new Point(x1, y1), new Point(x2, y2), org.bytedeco.opencv.opencv_core.Scalar.BLUE);
-        String name = "не заню";
+        String name = "не знаю";
         try {
             name = faceRecognition.whoIs( file );
         } catch (IOException e) {
@@ -273,7 +270,6 @@ public class Yolo {
             try {
                 return new MarkedObject(e, trainCifar10Model.getEmbeddings(matFrame, e, selectedSpeed), System.currentTimeMillis(), matFrame);
             } catch (Exception e1) {
-                e1.printStackTrace();
             }
             return null;
         }).collect(Collectors.toCollection(ConcurrentArrayList::new));

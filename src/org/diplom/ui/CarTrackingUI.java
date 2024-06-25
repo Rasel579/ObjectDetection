@@ -66,7 +66,6 @@ public class CarTrackingUI {
                             );
 
                         } catch (Exception e2) {
-                            e2.printStackTrace();
                         }
                     };
 
@@ -93,7 +92,6 @@ public class CarTrackingUI {
                 videoPlayer.stop();
 
             } catch (Exception e1) {
-                e1.printStackTrace();
             }
             progressBar.setVisible(false);
         });
@@ -117,7 +115,6 @@ public class CarTrackingUI {
                                     (Strategy) strategy.getSelectedItem()
                             );
                         } catch (Exception e2) {
-                            e2.printStackTrace();
                         }
                     };
 
@@ -194,7 +191,7 @@ public class CarTrackingUI {
     }
 
     private void addSignature() {
-        JLabel signature = new JLabel("Р.М.Шайхислмамов, студент гр. НТм(до)-22", SwingConstants.CENTER);
+        JLabel signature = new JLabel("Р.М.Шайхисламов, студент гр. НТм(до)-22", SwingConstants.CENTER);
         signature.setFont(new Font(Font.SANS_SERIF, Font.ITALIC, 20));
         signature.setForeground(Color.BLUE);
         mainFrame.add(signature, BorderLayout.SOUTH);

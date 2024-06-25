@@ -26,9 +26,9 @@ import java.io.IOException;
 
 public class YOLOPretrained {
     private static final long seed = 12345;
-    private static String TRAIN_PATH = "./src/main/resources/yolo2_dl4j_inference.v1.zip";
+    private static final String TRAIN_PATH = "./src/main/resources/yolo2_dl4j_inference.v1.zip";
     private static final double[][] DEFAULT_PRIOR_BOXES = {{0.57273, 0.677385}, {1.87446, 2.06253}, {3.33843, 5.47434}, {7.88282, 3.52778}, {9.77052, 9.16828}};
-    private static double[][] priorBoxes = DEFAULT_PRIOR_BOXES;
+    private static final double[][] priorBoxes = DEFAULT_PRIOR_BOXES;
 
     public static ComputationGraph initPretrained() throws IOException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
         String filename = "./src/main/resources/yolo.h5";
@@ -45,6 +45,9 @@ public class YOLOPretrained {
                 .activation(Activation.IDENTITY)
                 .trainingWorkspaceMode(WorkspaceMode.NONE)
                 .build();
+
+        System.out.println( "Configuration : " + fineTuneConf.toJson());
+
         ComputationGraph model = new TransferLearning.GraphBuilder(graph)
                 .fineTuneConfiguration(fineTuneConf)
                 .addLayer("outputs", new Yolo2OutputLayer.Builder()

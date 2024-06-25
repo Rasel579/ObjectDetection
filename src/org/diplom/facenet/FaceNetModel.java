@@ -1,34 +1,56 @@
 package org.diplom.facenet;
 
+import lombok.extern.slf4j.Slf4j;
+import org.datavec.api.io.labels.ParentPathLabelGenerator;
+import org.datavec.api.split.FileSplit;
+import org.datavec.image.loader.NativeImageLoader;
+import org.datavec.image.recordreader.ImageRecordReader;
+import org.deeplearning4j.core.storage.StatsStorage;
+import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.graph.L2NormalizeVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.ui.api.UIServer;
+import org.deeplearning4j.ui.model.stats.StatsListener;
+import org.deeplearning4j.ui.model.storage.InMemoryStatsStorage;
+import org.deeplearning4j.util.ModelSerializer;
+import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
+import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.Random;
 
 import static org.diplom.facenet.FaceNetUtils.convolution;
 
+@Slf4j
 public class FaceNetModel {
 
-    private int numClasses = 0;
+    private final int numClasses = 31;
     private final long seed = 1234;
-    private int[] inputShape = new int[]{3, 96, 96};
-    private IUpdater updater = new Adam(0.1, 0.9, 0.999, 0.01);
-    private int encodings = 128;
+    private final int[] inputShape = new int[]{3, 96, 96};
+    private final IUpdater updater = new Adam(0.1, 0.9, 0.999, 0.01);
+    private final int encodings = 128;
     public static int reluIndex = 1;
     public static int paddingIndex = 1;
+
+    private static final int BATCH_SIZE = 10;
+    private static final int EPOCH_NUM = 20;
+    private  static final String SAVE_PATH = "./src/main/resources/facenet_model/trained_face_recon_model.zip";
 
     public ComputationGraphConfiguration conf() {
 
@@ -114,17 +136,19 @@ public class FaceNetModel {
                 .addLayer("dense", new DenseLayer.Builder().nIn(736).nOut(encodings)
                         .activation(Activation.IDENTITY).build(), "avgpool")
                 .addVertex("encodings", new L2NormalizeVertex(new int[]{}, 1e-12), "dense")
-                .setInputTypes(InputType.convolutional(96, 96, inputShape[0]));
+               // .setInputTypes(InputType.convolutional(96, 96, inputShape[0]));
 
-       /* Uncomment in case of training the network, graph.setOutputs should be lossLayer then
+       // Uncomment in case of training the network, graph.setOutputs should be lossLayer then
         .addLayer("lossLayer", new CenterLossOutputLayer.Builder()
                         .lossFunction(LossFunctions.LossFunction.SQUARED_LOSS)
                         .activation(Activation.SOFTMAX).nIn(128).nOut(numClasses).lambda(1e-4).alpha(0.9)
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).build(),
-                "embeddings")*/
-        graph.setOutputs("encodings");
+                "encodings")
+           .setInputTypes(InputType.convolutional(96, 96, inputShape[0]));
+        graph.setOutputs("lossLayer");
+      // graph.setOutputs("encodings");
 
-        return graph.build();
+        return graph.backpropType(BackpropType.Standard).build();
     }
 
     private void buildBlock3a(ComputationGraphConfiguration.GraphBuilder graph) {
@@ -431,6 +455,93 @@ public class FaceNetModel {
         computationGraph.init();
         FaceNetUtils.loadWeights(computationGraph);
         return computationGraph;
+    }
+
+    public ComputationGraph initSavedModel() throws IOException {
+        resetIndexes();
+        ComputationGraph computationGraph = ModelSerializer.restoreComputationGraph(SAVE_PATH);
+        computationGraph.init();
+        return computationGraph;
+    }
+
+    public static void main(String[] args) {
+       try {
+           FaceNetModel model = new FaceNetModel();
+           model.init();
+           model.trainModel();
+
+           model.testData();
+       } catch ( Exception e ){
+          log.info(e.toString());
+       }
+    }
+
+    private void trainModel() throws IOException {
+
+        File trainData = new File("./src/main/resources/faces_datasets/train_data");
+
+        FileSplit train = new FileSplit(trainData, NativeImageLoader.ALLOWED_FORMATS, new Random(12345));
+
+        ParentPathLabelGenerator labelMarker = new ParentPathLabelGenerator();
+
+        ImageRecordReader recordReader = new ImageRecordReader(inputShape[1], inputShape[2], inputShape[0], labelMarker);
+
+        recordReader.initialize(train);
+
+        DataSetIterator dataIterator = new RecordReaderDataSetIterator( recordReader, BATCH_SIZE, 1, numClasses);
+
+        DataNormalization scaler = new ImagePreProcessingScaler(0,1);
+        scaler.fit(dataIterator);
+
+        dataIterator.setPreProcessor(scaler);
+
+        ComputationGraph model = this.init();
+
+        UIServer uiServer = UIServer.getInstance();
+
+        StatsStorage statsStorage = new InMemoryStatsStorage();
+
+        uiServer.attach(statsStorage);
+
+        model.setListeners(new StatsListener(statsStorage));
+
+        for ( int i = 0; i < EPOCH_NUM; i++){
+            model.fit(dataIterator);
+        }
+
+        log.info("******SAVE TRAINED MODEL*****");
+
+        File saveLocation = new File(SAVE_PATH);
+
+        boolean isSaveUpdater = false;
+
+        ModelSerializer.writeModel(model, saveLocation, isSaveUpdater);
+
+    }
+
+    private void testData() throws IOException {
+
+        ComputationGraph model = this.initSavedModel();
+
+        File testData = new File("./src/main/resources/faces_datasets/test_data");
+        FileSplit test = new FileSplit(testData, NativeImageLoader.ALLOWED_FORMATS, new Random(12345));
+
+        ParentPathLabelGenerator labelMarker = new ParentPathLabelGenerator();
+
+        ImageRecordReader recordReader = new ImageRecordReader(inputShape[1], inputShape[2], inputShape[0], labelMarker);
+
+        recordReader.initialize(test);
+
+        DataSetIterator testIterator = new RecordReaderDataSetIterator( recordReader, BATCH_SIZE, 1, 31);
+        DataNormalization scaler = new ImagePreProcessingScaler(0,1);
+
+        scaler.fit(testIterator);
+        testIterator.setPreProcessor(scaler);
+
+        Evaluation eval = model.evaluate(testIterator);
+
+        log.info( eval.stats() );
+
     }
 
     private static void resetIndexes() {
