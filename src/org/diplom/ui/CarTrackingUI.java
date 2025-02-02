@@ -19,7 +19,7 @@ public class CarTrackingUI {
     private static final int FRAME_HEIGHT = 220;
     private static final Font FONT = new Font("Dialog", Font.BOLD, 18);
     private static final Font ITALIC = new Font("Dialog", Font.ITALIC, 18);
-    private static final String AUTONOMOUS_DRIVING = "Car Tracking";
+    private static final String AUTONOMOUS_DRIVING = "Зрение безопасности";
     private JFrame mainFrame;
     private JPanel mainPanel;
     private File selectedFile = new File("./src/main/resources/videoSample.mp4");
@@ -37,20 +37,20 @@ public class CarTrackingUI {
         JPanel actionPanel = new JPanel();
         actionPanel.setBorder(BorderFactory.createTitledBorder(""));
 
-        JButton chooseVideo = new JButton("Choose Video");
+        JButton chooseVideo = new JButton("Выбрать Видео");
         chooseVideo.setBackground(Color.ORANGE.darker());
         chooseVideo.setForeground(Color.ORANGE.darker());
         chooseVideo.addActionListener(e -> chooseFileAction());
 
         actionPanel.add(chooseVideo);
 
-        JButton start = new JButton("Start detection");
+        JButton start = new JButton("Начать распознавание");
 
         start.setBackground(Color.GREEN.darker());
         start.setForeground(Color.GREEN.darker());
         start.addActionListener(e -> {
             progressBar = new ProgressBar(mainFrame);
-            SwingUtilities.invokeLater(() -> progressBar.showProgressBar("Detecting video ..."));
+            SwingUtilities.invokeLater(() -> progressBar.showProgressBar("Распознавание ..."));
             Executors.newSingleThreadExecutor().submit(() -> {
                 try {
                     videoPlayer = new VideoPlayer();
@@ -81,7 +81,7 @@ public class CarTrackingUI {
 
         actionPanel.add(start);
 
-        JButton stop = new JButton("Stop");
+        JButton stop = new JButton("Остановить");
         stop.setForeground(Color.BLUE.darker());
         stop.setBackground(Color.BLUE.darker());
         stop.addActionListener(e -> {
@@ -97,11 +97,11 @@ public class CarTrackingUI {
         });
         actionPanel.add(stop);
 
-        JButton cameraBtn = new JButton("Camera");
+        JButton cameraBtn = new JButton("Выбрать Камеру");
         actionPanel.add(cameraBtn);
         cameraBtn.addActionListener(e -> {
             progressBar = new ProgressBar(mainFrame);
-            SwingUtilities.invokeLater(() -> progressBar.showProgressBar("Detecting camera ..."));
+            SwingUtilities.invokeLater(() -> progressBar.showProgressBar("Распознавание с камеры ..."));
             Executors.newSingleThreadExecutor().submit(() -> {
                 try {
                     WebCameraPlayer cameraPlayer = new WebCameraPlayer();
@@ -132,13 +132,13 @@ public class CarTrackingUI {
         chooserCifarModel = new JComboBox<>();
         chooserCifarModel.setForeground(Color.BLUE.darker());
         Stream.of(Objects.requireNonNull(new File("./src/main/resources/models").listFiles())).forEach(f1 -> chooserCifarModel.addItem(f1.getName()));
-        JLabel label = new JLabel("Cifar-10-model");
+        JLabel label = new JLabel("Выбрать обученную модель");
 
         label.setForeground(Color.BLUE);
         mainPanel.add(label);
         mainPanel.add(chooserCifarModel);
 
-        label = new JLabel("Threshold");
+        label = new JLabel("Порог точности");
         label.setForeground(Color.DARK_GRAY);
         threshold = new JSpinner(new SpinnerNumberModel(0.9, 0.1, 2, 0.1));
         threshold.setFont(ITALIC);
@@ -191,7 +191,7 @@ public class CarTrackingUI {
     }
 
     private void addSignature() {
-        JLabel signature = new JLabel("Р.М.Шайхисламов, студент гр. НТм(до)-22", SwingConstants.CENTER);
+        JLabel signature = new JLabel("Р.М.Шайхисламов, студент гр. НТмз-22-1", SwingConstants.CENTER);
         signature.setFont(new Font(Font.SANS_SERIF, Font.ITALIC, 20));
         signature.setForeground(Color.BLUE);
         mainFrame.add(signature, BorderLayout.SOUTH);
